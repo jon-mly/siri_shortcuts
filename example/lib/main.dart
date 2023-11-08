@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:siri_shortcuts/siri_shortcuts.dart';
 
@@ -15,9 +17,50 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _siriShortcutsPlugin = SiriShortcuts();
 
+  StreamSubscription? _subscription;
+
   @override
   void initState() {
     super.initState();
+    _subscription = _siriShortcutsPlugin.listenForShortcuts.listen(_onShortcutEvent);
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  void _onShortcutEvent(ShortcutDetail detail) {
+    print(detail.activityType);
+    print(detail.userInfo);
+  }
+
+  Future<void> createExampleShortcut() async {
+    final result = await _siriShortcutsPlugin.createShortcut(
+      ShortcutOptions(
+          activityType: 'testShortcut',
+          title: 'Raccourci test',
+          description:
+              "Déclenche une action de test qui écrira dans la console que l'action a été reçue",
+          suggestedInvocationPhrase: 'Déclenche mon nouveau raccourci',
+          eligibility: ShortcutEligibility(
+            search: false,
+            prediction: false,
+            handOff: false,
+            publicIndexing: false,
+          ),
+          userInfo: {
+            'hi': 'there',
+          },
+          keywords: [
+            "test",
+            "dev"
+          ]),
+    );
+
+    print(result.status);
+    print(result.phrase);
   }
 
   @override
@@ -36,22 +79,8 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Center(
           child: ElevatedButton(
-            onPressed: () async {
-              final result = await _siriShortcutsPlugin.createShortcut(
-                ShortcutOptions(
-                  activityType: 'a',
-                  title: 'Hello',
-                  suggestedInvocationPhrase: 'Nepal',
-                  userInfo: {
-                    'hi': 'there',
-                  },
-                ),
-              );
-
-              print(result.status);
-              print(result.phrase);
-            },
-            child: const Text('Create Shortcut'),
+            onPressed: createExampleShortcut,
+            child: const Text('Create / Edit Shortcut'),
           ),
         ),
       ),

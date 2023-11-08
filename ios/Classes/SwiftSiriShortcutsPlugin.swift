@@ -10,19 +10,23 @@ import Flutter
 import IntentsUI
 import UIKit
 
+extension FlutterError: Error {}
+
 @available(iOS 12.0, *)
 public class SwiftSiriShortcutsPlugin: NSObject, FlutterPlugin, SiriShortcutsApi {
-    var voiceShortcutViewController: VoiceShortcutViewControllerDelegate?
+
+    var voiceShortcutViewControllerDelegate: VoiceShortcutViewControllerDelegate?
     let flutterApi: SiriShortcutsFlutterApi
-    
-    let shortcutNotificationName = Notification.Name("com.acmesoftware.siri_shortcuts")
-    let activityTypePrefix = "com.acmesoftware."
+    let bundleId: String?
+    let activityTypePrefix: String
+    let shortcutNotificationName: Notification.Name
     
     init(flutterApi: SiriShortcutsFlutterApi) {
         self.flutterApi = flutterApi
+        bundleId = Bundle.main.bundleIdentifier
+        activityTypePrefix = "\(bundleId ?? "")."
+        shortcutNotificationName = Notification.Name("\(activityTypePrefix)siri_shortcuts")
     }
-    
-    
     
     public func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([Any]) -> Void) -> Bool {
         postNotification(userActivity: userActivity)
@@ -31,14 +35,13 @@ public class SwiftSiriShortcutsPlugin: NSObject, FlutterPlugin, SiriShortcutsApi
     
     func postNotification(userActivity: NSUserActivity) {
         if userActivity.activityType.hasPrefix(activityTypePrefix) {
-            flutterApi.onShortcutTriggered(detail: ShortcutDetail(activityType: userActivity.activityType, userInfo: userActivity.userInfo as? [String: Any] ?? [:])) {
-                
+            flutterApi.onShortcutTriggered(detail: ShortcutDetail(activityType: userActivity.activityType, userInfo: userActivity.userInfo as? [String: Any] ?? [:])) { _ in
+                return;
             }
         }
     }
     
-    
-    func createShortcut(options: ShortcutOptions, completion: @escaping (CreateShortcutResult) -> Void) {
+    func createShortcut(options: ShortcutOptions, completion: @escaping (Result<CreateShortcutResult, Error>) -> Void) {
         let activity = NSUserActivity(activityType: "\(activityTypePrefix)\(options.activityType)")
         
         activity.title = options.title
@@ -80,14 +83,14 @@ public class SwiftSiriShortcutsPlugin: NSObject, FlutterPlugin, SiriShortcutsApi
         
         INVoiceShortcutCenter.shared.getAllVoiceShortcuts { voiceShortcuts,error in
             if voiceShortcuts == nil {
-                completion(CreateShortcutResult(status: .cancelled,errorMessage: "Failed fetching voice shortcuts: \(error.debugDescription)"))
+                completion(.success(CreateShortcutResult(status: .cancelled,errorMessage: "Failed fetching voice shortcuts: \(error.debugDescription)")))
             } else {
                 let voiceShortcut = voiceShortcuts!.first { vs in
                     return vs.shortcut.userActivity?.activityType == activity.activityType
                 }
                 
                 DispatchQueue.main.async {
-                    self.voiceShortcutViewController = VoiceShortcutViewControllerDelegate(completion: completion, onEditingComplete: { deletedShortcutIdentifier in
+                    self.voiceShortcutViewControllerDelegate = VoiceShortcutViewControllerDelegate(completion: completion, onEditingComplete: { deletedShortcutIdentifier in
                         
                     })
                     
@@ -95,12 +98,12 @@ public class SwiftSiriShortcutsPlugin: NSObject, FlutterPlugin, SiriShortcutsApi
                     
                     if voiceShortcut == nil {
                         let addViewController = INUIAddVoiceShortcutViewController(shortcut: shortcut)
-                        addViewController.delegate = self.voiceShortcutViewController
+                        addViewController.delegate = self.voiceShortcutViewControllerDelegate
                         
                         viewController = addViewController
                     } else {
                         let editViewController = INUIEditVoiceShortcutViewController(voiceShortcut: voiceShortcut!)
-                        editViewController.delegate = self.voiceShortcutViewController
+                        editViewController.delegate = self.voiceShortcutViewControllerDelegate
                         
                         viewController = editViewController
                     }

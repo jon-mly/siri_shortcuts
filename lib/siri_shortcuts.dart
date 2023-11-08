@@ -6,6 +6,7 @@ export 'src/siri_shortcuts_api.g.dart' hide SiriShortcutsApi;
 
 class SiriShortcuts extends SiriShortcutsApi
     implements SiriShortcutsFlutterApi {
+
   SiriShortcuts() {
     SiriShortcutsFlutterApi.setup(this);
   }

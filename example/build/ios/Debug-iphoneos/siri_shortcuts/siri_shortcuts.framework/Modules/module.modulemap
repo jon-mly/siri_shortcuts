@@ -1,0 +1,11 @@
+framework module siri_shortcuts {
+  umbrella header "siri_shortcuts-umbrella.h"
+
+  export *
+  module * { export * }
+}
+
+module siri_shortcuts.Swift {
+  header "siri_shortcuts-Swift.h"
+  requires objc
+}

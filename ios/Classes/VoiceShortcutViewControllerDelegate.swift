@@ -10,10 +10,10 @@ import IntentsUI
 @available(iOS 12.0, *)
 class VoiceShortcutViewControllerDelegate: NSObject, INUIAddVoiceShortcutViewControllerDelegate, INUIEditVoiceShortcutViewControllerDelegate {
     
-    let completion: (CreateShortcutResult) -> Void
+    let completion: (Result<CreateShortcutResult, Error>) -> Void
     let onEditingComplete: (UUID?) -> Void
     
-    init(completion: @escaping (CreateShortcutResult) -> Void, onEditingComplete: @escaping (UUID?) -> Void) {
+    init(completion: @escaping (Result<CreateShortcutResult, Error>) -> Void, onEditingComplete: @escaping (UUID?) -> Void) {
         self.completion = completion
         self.onEditingComplete = onEditingComplete
     }
@@ -54,7 +54,7 @@ class VoiceShortcutViewControllerDelegate: NSObject, INUIAddVoiceShortcutViewCon
         DispatchQueue.main.async {
             controller.dismiss(animated: true)
             
-            self.completion(CreateShortcutResult(status: status, phrase: shortcut?.invocationPhrase, errorMessage: errorMessage))
+            self.completion(.success(CreateShortcutResult(status: status, phrase: shortcut?.invocationPhrase, errorMessage: errorMessage)))
         }
     }
 }

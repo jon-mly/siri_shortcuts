@@ -1,0 +1,6 @@
+framework module siri_shortcuts {
+  umbrella header "siri_shortcuts-umbrella.h"
+
+  export *
+  module * { export * }
+}
